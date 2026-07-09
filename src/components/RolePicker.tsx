@@ -25,14 +25,16 @@ export function RolePicker({ onSaved }: { onSaved?: () => void }) {
       });
   }, []);
 
+  // case-insensitive dedupe: "remote" and "Remote" are the same preference
   function addTitle() {
     const t = titleInput.trim();
-    if (t && !titles.includes(t)) setTitles([...titles, t]);
+    if (t && !titles.some((x) => x.toLowerCase() === t.toLowerCase())) setTitles([...titles, t]);
     setTitleInput("");
   }
   function addLocation() {
     const l = locationInput.trim();
-    if (l && !locations.includes(l)) setLocations([...locations, l]);
+    if (l && !locations.some((x) => x.toLowerCase() === l.toLowerCase()))
+      setLocations([...locations, l]);
     setLocationInput("");
   }
 
