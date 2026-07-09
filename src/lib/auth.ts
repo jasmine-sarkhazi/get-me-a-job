@@ -14,7 +14,7 @@ export const authOptions: AuthOptions = {
       // by email is safe. Also recovers users whose first sign-in failed
       // mid-callback, leaving a User row with no Account
       // (error=OAuthAccountNotLinked).
-      allowDangerousEmailAccountLinking: true,
+      // allowDangerousEmailAccountLinking: true,
       authorization: {
         params: {
           // gmail.readonly lets the tracker watch the inbox for recruiter replies
