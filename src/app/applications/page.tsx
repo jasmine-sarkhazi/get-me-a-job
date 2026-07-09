@@ -171,12 +171,27 @@ export default function ApplicationsPage() {
                       </td>
                       <td className="px-3 py-3 text-slate-400">{a.method}</td>
                       <td className="px-3 py-3">
-                        <span
-                          className={`rounded border px-2 py-0.5 text-xs ${
-                            STATUS_STYLES[a.status] ?? STATUS_STYLES.queued
-                          }`}
-                        >
-                          {a.status.replace("_", " ")}
+                        <span className="flex items-center gap-2">
+                          <span
+                            className={`rounded border px-2 py-0.5 text-xs ${
+                              STATUS_STYLES[a.status] ?? STATUS_STYLES.queued
+                            }`}
+                          >
+                            {a.status.replace("_", " ")}
+                          </span>
+                          {["needs_review", "queued", "failed"].includes(a.status) && (
+                            <button
+                              className="btn-primary !px-2.5 !py-1 !text-xs"
+                              disabled={reviewing === a.id}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                reviewAndSubmit(a.id);
+                              }}
+                              title="Opens a browser window with the form pre-filled — you review and hit submit"
+                            >
+                              {reviewing === a.id ? "Opening…" : "Review & submit"}
+                            </button>
+                          )}
                         </span>
                       </td>
                     </tr>
