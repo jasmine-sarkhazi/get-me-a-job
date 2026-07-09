@@ -11,7 +11,7 @@ export interface ApplyOutcome {
   detail: string;
 }
 
-function applyUrlFor(job: JobPosting): string {
+export function applyUrlFor(job: Pick<JobPosting, "source" | "url">): string {
   if (job.source === "lever") return `${job.url.replace(/\/$/, "")}/apply`;
   if (job.source === "ashby" && !job.url.includes("/application")) {
     return `${job.url.replace(/\/$/, "")}/application`;
@@ -79,8 +79,9 @@ export async function autoApply(
     return finish(
       application.id,
       "needs_review",
-      `Dry run (AUTO_APPLY_LIVE=false): filled ${result.filled.length} fields` +
-        (result.unanswered.length ? `; no stored answer for: ${result.unanswered.slice(0, 5).join("; ")}` : "")
+      `Form fill verified (${result.filled.length} fields; auto-submit is off)` +
+        (result.unanswered.length ? `; no stored answer for: ${result.unanswered.slice(0, 5).join("; ")}` : "") +
+        ". Use Review & submit on the Applications page to finish in your browser."
     );
   }
   if (result.submitted) {

@@ -55,6 +55,8 @@ export default function ApplicationsPage() {
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const [showAnswers, setShowAnswers] = useState<string | null>(null);
+  const [reviewing, setReviewing] = useState<string | null>(null);
+  const [reviewNotice, setReviewNotice] = useState<string | null>(null);
 
   async function load() {
     const res = await fetch("/api/applications");
@@ -65,7 +67,32 @@ export default function ApplicationsPage() {
 
   useEffect(() => {
     load();
+    // keep statuses fresh while a review browser window may be open
+    const timer = setInterval(load, 15_000);
+    return () => clearInterval(timer);
   }, []);
+
+  async function reviewAndSubmit(id: string) {
+    setReviewing(id);
+    setReviewNotice(null);
+    try {
+      const res = await fetch(`/api/applications/${id}/review`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        setReviewNotice(data.error ?? "Could not open the review browser.");
+        return;
+      }
+      setReviewNotice(
+        `A browser window opened with the form pre-filled (${data.filled} fields). ` +
+          (data.unanswered?.length
+            ? `No stored answer for: ${data.unanswered.slice(0, 5).join("; ")}. Fill those in the window. `
+            : "") +
+          "Review it and hit Submit — the tracker updates automatically when the ATS confirms."
+      );
+    } finally {
+      setReviewing(null);
+    }
+  }
 
   async function syncInbox() {
     setSyncing(true);
@@ -96,6 +123,11 @@ export default function ApplicationsPage() {
         </button>
       </div>
       {syncMessage && <p className="mt-3 text-sm text-slate-400">{syncMessage}</p>}
+      {reviewNotice && (
+        <p className="mt-3 rounded-lg border border-accent-600 bg-ink-900 px-4 py-2 text-sm text-slate-200">
+          {reviewNotice}
+        </p>
+      )}
 
       {loading ? (
         <p className="mt-6 text-slate-400">Loading…</p>
@@ -171,7 +203,20 @@ export default function ApplicationsPage() {
                                   ))}
                                 </ul>
                               )}
-                              <div className="mt-3 flex gap-4 text-xs">
+                              <div className="mt-3 flex flex-wrap items-center gap-4 text-xs">
+                                {["needs_review", "queued", "failed"].includes(a.status) && (
+                                  <button
+                                    className="btn-primary !px-3 !py-1.5 !text-xs"
+                                    disabled={reviewing === a.id}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      reviewAndSubmit(a.id);
+                                    }}
+                                    title="Opens a browser window with the form pre-filled — you review and hit submit"
+                                  >
+                                    {reviewing === a.id ? "Opening browser…" : "Review & submit"}
+                                  </button>
+                                )}
                                 <a
                                   href={a.jobUrl}
                                   target="_blank"
