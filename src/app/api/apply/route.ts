@@ -20,11 +20,13 @@ interface ApplyRequestJob {
 }
 
 /**
- * POST /api/apply  { jobs: ApplyRequestJob[] }
+ * POST /api/apply  { jobs: ApplyRequestJob[], force?: boolean }
  *
  * Auto-applies to each job that scores at or above the user's threshold
  * (default 95%). Match scores are recomputed server-side — the client cannot
- * force an application through with a forged score.
+ * forge a score. `force: true` (one-click apply on a specific job) skips the
+ * threshold gate — the user explicitly chose that job — but still records the
+ * real computed score in the tracker.
  */
 export async function POST(req: NextRequest) {
   const userId = await getSessionUserId();
@@ -44,12 +46,13 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
   const jobs: ApplyRequestJob[] = Array.isArray(body?.jobs) ? body.jobs.slice(0, 20) : [];
+  const force = body?.force === true;
   if (jobs.length === 0) return NextResponse.json({ error: "No jobs provided" }, { status: 400 });
 
   const results = [];
   for (const job of jobs) {
     const match = computeMatch(resume.text, job.title, job.description ?? "");
-    if (match.score < threshold) {
+    if (!force && match.score < threshold) {
       results.push({
         id: job.id,
         skipped: true,
