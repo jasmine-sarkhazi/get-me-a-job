@@ -10,6 +10,11 @@ export const authOptions: AuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID ?? "",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+      // Google is the only provider and verifies email ownership, so linking
+      // by email is safe. Also recovers users whose first sign-in failed
+      // mid-callback, leaving a User row with no Account
+      // (error=OAuthAccountNotLinked).
+      // allowDangerousEmailAccountLinking: true,
       authorization: {
         params: {
           // gmail.readonly lets the tracker watch the inbox for recruiter replies
