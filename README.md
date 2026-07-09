@@ -49,12 +49,18 @@ Google OAuth setup: create OAuth credentials at console.cloud.google.com, enable
 add `http://localhost:3000/api/auth/callback/google` as a redirect URI, and add the
 `.../auth/gmail.readonly` scope on the consent screen.
 
-### Auto-apply safety switch
+### Applying: review-and-submit vs fully automatic
 
-`AUTO_APPLY_LIVE=false` (the default) runs auto-apply in **dry-run mode**: forms are filled and the
-attempt is fully recorded in the tracker as `needs_review`, but nothing is submitted. Set
-`AUTO_APPLY_LIVE=true` and point `PLAYWRIGHT_EXECUTABLE_PATH` at a Chromium binary to submit for
-real. Applications you submit are your own responsibility — review a few dry runs first.
+By default (`AUTO_APPLY_LIVE=false`) nothing is ever submitted without you. Applications land in
+the tracker as `needs_review`, and **Review & submit** (on the Applications page, or automatically
+after a one-click Apply) opens a real browser window with the form pre-filled from your stored
+answers and your resume attached — you look it over and hit Submit yourself. The app watches the
+tab and flips the status to `submitted` when the ATS confirmation page appears.
+
+Set `AUTO_APPLY_LIVE=true` to let bulk auto-apply click Submit on its own for jobs at or above
+your match threshold. Either way, `PLAYWRIGHT_EXECUTABLE_PATH` can point at any Chrome/Chromium
+binary; if unset, common install locations are probed automatically. Applications you submit are
+your own responsibility.
 
 ## Architecture notes
 

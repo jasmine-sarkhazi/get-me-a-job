@@ -26,6 +26,7 @@ interface Match {
 
 interface ApplyResult {
   id: string;
+  applicationId?: string;
   skipped: boolean;
   reason?: string;
   score: number;
@@ -89,6 +90,7 @@ export default function SearchPage() {
   const [applyingIds, setApplyingIds] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
   const [applyResults, setApplyResults] = useState<ApplyResult[] | null>(null);
+  const [reviewNotice, setReviewNotice] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
 
   useEffect(() => {
@@ -107,6 +109,7 @@ export default function SearchPage() {
     setLoading(true);
     setError(null);
     setApplyResults(null);
+    setReviewNotice(null);
     const res = await fetch("/api/jobs/search");
     const data = await res.json();
     setLoading(false);
@@ -225,6 +228,22 @@ export default function SearchPage() {
         return;
       }
       setApplyResults(data.results);
+      // One-click apply with auto-submit off: hand straight into the
+      // review-and-submit flow — a browser window with the filled form.
+      if (force && list.length === 1) {
+        const r = (data.results as ApplyResult[])[0];
+        if (r && !r.skipped && r.status === "needs_review" && r.applicationId) {
+          const rev = await fetch(`/api/applications/${r.applicationId}/review`, { method: "POST" });
+          const revData = await rev.json();
+          if (rev.ok) {
+            setReviewNotice(
+              `A browser window opened with the application form pre-filled (${revData.filled} fields). Review it and hit Submit — the tracker updates when the ATS confirms.`
+            );
+          } else {
+            setReviewNotice(revData.error ?? "Could not open the review browser.");
+          }
+        }
+      }
       // mark applied jobs in place instead of re-sweeping every board
       const appliedIds = new Set(
         (data.results as ApplyResult[]).filter((r) => !r.skipped).map((r) => r.id)
@@ -367,6 +386,12 @@ export default function SearchPage() {
       )}
 
       {error && <p className="mt-4 rounded-lg border border-red-900 bg-red-950/40 px-4 py-2 text-sm text-red-300">{error}</p>}
+
+      {reviewNotice && (
+        <p className="mt-4 rounded-lg border border-accent-600 bg-ink-900 px-4 py-2 text-sm text-slate-200">
+          {reviewNotice}
+        </p>
+      )}
 
       {applyResults && (
         <div className="card mt-4">
