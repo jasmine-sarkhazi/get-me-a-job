@@ -21,6 +21,8 @@ export async function GET() {
       location: a.location,
       source: a.source,
       matchScore: a.matchScore,
+      matchDetail: safeParse(a.matchDetail),
+      answersUsed: safeParse(a.answersUsed),
       status: a.status,
       method: a.method,
       appliedAt: a.appliedAt,
