@@ -18,6 +18,9 @@ model Account {
   refresh_token     String?
   access_token      String?
   expires_at        Int?
+  // Google includes this extra field in its token response; the Prisma
+  // adapter passes it through, so the column must exist
+  refresh_token_expires_in Int?
   token_type        String?
   scope             String?
   id_token          String?
