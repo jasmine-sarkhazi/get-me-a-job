@@ -1,0 +1,154 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- NextAuth ----------
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String        @id @default(cuid())
+  name          String?
+  email         String?       @unique
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+  resumes       Resume[]
+  profile       Profile?
+  rolePref      RolePreference?
+  applications  Application[]
+  createdAt     DateTime      @default(now())
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ---------- Job-search domain ----------
+
+model Resume {
+  id        String   @id @default(cuid())
+  userId    String
+  fileName  String
+  mimeType  String
+  filePath  String
+  // Extracted plain text used by the matching engine and auto-apply
+  text      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// The user's saved answers to the harvested ATS questions, keyed by question key.
+model Profile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  // JSON object: { [questionKey]: answer }
+  answers   String   @default("{}")
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model RolePreference {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  // JSON array of titles, e.g. ["Product Manager", "Growth PM"]
+  titles     String   @default("[]")
+  // JSON array of preferred locations
+  locations  String   @default("[]")
+  remoteOnly Boolean  @default(false)
+  // Auto-apply threshold as a percentage (default 95)
+  autoApplyThreshold Int @default(95)
+  autoApplyEnabled   Boolean @default(false)
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Questions harvested from live ATS boards (Greenhouse, Ashby, Lever, Jobvite)
+// plus the canonical set. Rendered as the onboarding form.
+model AtsQuestion {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  label     String
+  type      String   // text | textarea | select | multiselect | boolean | file
+  // JSON array of options for select types
+  options   String   @default("[]")
+  required  Boolean  @default(false)
+  // Which ATS vendors this question was seen on, JSON array e.g. ["greenhouse","ashby"]
+  sources   String   @default("[]")
+  // How many live postings included this question (popularity ranking)
+  frequency Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+model Application {
+  id          String   @id @default(cuid())
+  userId      String
+  source      String   // greenhouse | lever | ashby | remotive | arbeitnow | other
+  externalId  String?
+  jobTitle    String
+  company     String
+  jobUrl      String
+  location    String?
+  matchScore  Int
+  // JSON of the matching breakdown at apply time
+  matchDetail String   @default("{}")
+  // queued | submitted | needs_review | failed | rejected | interview | assessment | offer | archived
+  status      String   @default("queued")
+  method      String   @default("auto") // auto | manual
+  // JSON snapshot of the answers submitted with this application
+  answersUsed String   @default("{}")
+  appliedAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  events      ApplicationEvent[]
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, appliedAt])
+}
+
+model ApplicationEvent {
+  id            String   @id @default(cuid())
+  applicationId String
+  type          String   // applied | email_received | status_change | error | note
+  detail        String
+  // Gmail message id when the event came from inbox sync (dedup key)
+  emailId       String?
+  occurredAt    DateTime @default(now())
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@unique([applicationId, emailId])
+}
