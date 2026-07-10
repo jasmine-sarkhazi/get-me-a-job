@@ -50,6 +50,81 @@ export const CANONICAL_QUESTIONS: AtsFormQuestion[] = [
     source: "canonical",
   },
   { key: "how_did_you_hear_about_this_job", label: "How did you hear about this job?", type: "text", source: "canonical" },
+  {
+    key: "post_employment_restrictions",
+    label:
+      "Are you subject to any employment agreements and/or post-employment restrictions with your current employer or a past employer?",
+    type: "select",
+    options: ["Yes", "No"],
+    source: "canonical",
+  },
+  {
+    key: "country",
+    label: "Please choose the country in which you are located.",
+    type: "select",
+    options: [
+      "United States",
+      "Canada",
+      "United Kingdom",
+      "Ireland",
+      "Germany",
+      "France",
+      "Netherlands",
+      "Belgium",
+      "Spain",
+      "Portugal",
+      "Italy",
+      "Switzerland",
+      "Austria",
+      "Sweden",
+      "Norway",
+      "Denmark",
+      "Finland",
+      "Poland",
+      "Czech Republic",
+      "Romania",
+      "Greece",
+      "Ukraine",
+      "Turkey",
+      "Israel",
+      "United Arab Emirates",
+      "India",
+      "Pakistan",
+      "Bangladesh",
+      "Singapore",
+      "Philippines",
+      "Indonesia",
+      "Vietnam",
+      "Thailand",
+      "Japan",
+      "South Korea",
+      "China",
+      "Hong Kong",
+      "Taiwan",
+      "Australia",
+      "New Zealand",
+      "Brazil",
+      "Mexico",
+      "Argentina",
+      "Colombia",
+      "Chile",
+      "Peru",
+      "South Africa",
+      "Nigeria",
+      "Kenya",
+      "Egypt",
+      "Other",
+    ],
+    source: "canonical",
+  },
+  {
+    key: "located_in_us",
+    label: "Are you currently located in the United States of America?",
+    type: "select",
+    options: ["Yes", "No"],
+    required: true,
+    source: "canonical",
+  },
   { key: "cover_letter", label: "Cover Letter / Why do you want to work here?", type: "textarea", source: "canonical" },
   {
     key: "gender",
@@ -173,13 +248,19 @@ export async function harvestAndStoreQuestions(): Promise<number> {
   return rows.length;
 }
 
-/** Load the question set for the onboarding form, seeding canonical set if empty. */
+/**
+ * Load the question set for the onboarding form. Canonical questions are
+ * always synced in, so additions to CANONICAL_QUESTIONS reach existing
+ * databases too.
+ */
 export async function getQuestionSet() {
   let questions = await prisma.atsQuestion.findMany({
     orderBy: [{ required: "desc" }, { frequency: "desc" }],
   });
-  if (questions.length === 0) {
-    for (const q of CANONICAL_QUESTIONS) {
+  const existingKeys = new Set(questions.map((q) => q.key));
+  const missing = CANONICAL_QUESTIONS.filter((q) => !existingKeys.has(q.key));
+  if (missing.length > 0) {
+    for (const q of missing) {
       await prisma.atsQuestion.upsert({
         where: { key: q.key },
         create: {
