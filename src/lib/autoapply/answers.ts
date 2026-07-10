@@ -38,6 +38,26 @@ const KEY_SYNONYMS: Record<string, string[]> = {
   veteran_status: ["veteran_status", "protected_veteran"],
   disability_status: ["disability_status", "disability"],
   full_name: ["full_name", "name", "your_name"],
+  post_employment_restrictions: [
+    "post_employment_restrictions",
+    "employment_agreements",
+    "non_compete",
+    "are_you_subject_to_any_employment_agreements",
+  ],
+  country: [
+    "country",
+    "please_choose_the_country_in_which_you_are_located",
+    "country_of_residence",
+    "current_country",
+    "in_which_country_do_you_reside",
+    "what_country_are_you_located_in",
+  ],
+  located_in_us: [
+    "located_in_us",
+    "are_you_currently_located_in_the_united_states_of_america",
+    "are_you_currently_located_in_the_united_states",
+    "are_you_based_in_the_us",
+  ],
 };
 
 const REVERSE_SYNONYMS: Record<string, string> = {};
@@ -72,6 +92,11 @@ export function answerForLabel(label: string, answers: AnswerMap): string | null
   if (has("website") || has("portfolio")) return answers.website ?? null;
   if (has("sponsor")) return answers.require_sponsorship ?? null;
   if (has("authorized") || has("authorization") || has("right_to_work")) return answers.work_authorization ?? null;
+  if (has("employment_agreement") || has("post_employment") || has("non_compete") || has("restriction"))
+    return answers.post_employment_restrictions ?? null;
+  if (has("country")) return answers.country ?? null;
+  if (has("located") && (has("united_states") || has("usa") || has("u_s")))
+    return answers.located_in_us ?? null;
   if (has("salary") || has("compensation")) return answers.desired_salary ?? null;
   if (has("relocat")) return answers.willing_to_relocate ?? null;
   if (has("start") || has("notice") || has("availab")) return answers.notice_period ?? null;
